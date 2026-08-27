@@ -18,9 +18,9 @@ node server.js
 
 Depois abra no navegador: http://localhost:3000
 
-A primeira carga demora ~1-2 min porque pagina todas as ~22 mil conversas da
-conta. O resultado fica em cache por 15 minutos. Clique em "Atualizar" para
-forçar releitura.
+A primeira carga demora ~5-10 min (medido na prática) porque pagina todas as
+~22 mil conversas da conta. O resultado fica em cache por 15 minutos. Clique em
+"Atualizar" para forçar releitura.
 
 ## O que o painel mostra
 
