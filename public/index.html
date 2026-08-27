@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chatwoot - Dados por Agente</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --txt:#e2e8f0; --mut:#94a3b8; --accent:#38bdf8; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:20px 28px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  h1 { font-size:20px; margin:0; }
+  .meta { color:var(--mut); font-size:13px; }
+  button { background:var(--accent); color:#04263a; border:0; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .controls { margin-left:auto; display:flex; gap:10px; align-items:center; }
+  input[type=text]{ background:var(--card); border:1px solid var(--line); color:var(--txt); padding:8px 12px; border-radius:8px; min-width:220px; }
+  main { padding:20px 28px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:24px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .stat .n { font-size:26px; font-weight:700; }
+  .stat .l { color:var(--mut); font-size:13px; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border-radius:12px; overflow:hidden; }
+  th, td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); font-size:14px; vertical-align:top; }
+  th { background:#0b1220; color:var(--mut); font-weight:600; cursor:pointer; user-select:none; }
+  tr:hover td { background:#243049; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:12px; margin:2px 4px 2px 0; color:#04263a; font-weight:600; }
+  .muted { color:var(--mut); }
+  .badge { padding:2px 8px; border-radius:6px; font-size:12px; }
+  .on { background:#065f46; color:#a7f3d0; }
+  .off { background:#3f3f46; color:#d4d4d8; }
+  .loader { text-align:center; padding:60px; color:var(--mut); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Chatwoot — Dados por Agente</h1>
+  <span class="meta" id="meta"></span>
+  <div class="controls">
+    <input type="text" id="search" placeholder="Filtrar agente..." />
+    <button id="refresh">Atualizar</button>
+  </div>
+</header>
+<main>
+  <div class="cards" id="cards"></div>
+  <div id="table-wrap"><div class="loader">Carregando dados da API do Chatwoot...</div></div>
+</main>
+<script>
+let DATA = null;
+let sortKey = 'total';
+let sortDir = -1;
+
+function colorFor(title){
+  if(!DATA) return '#64748b';
+  const l = DATA.labels.find(x=>x.title===title);
+  return l && l.color ? l.color : '#64748b';
+}
+
+async function load(refresh){
+  const btn = document.getElementById('refresh');
+  btn.disabled = true; btn.textContent = 'Carregando...';
+  document.getElementById('table-wrap').innerHTML = '<div class="loader">Carregando dados da API do Chatwoot...</div>';
+  try{
+    const res = await fetch('/api/report' + (refresh?'?refresh=1':''));
+    DATA = await res.json();
+    if(DATA.error) throw new Error(DATA.error);
+    render();
+  }catch(e){
+    document.getElementById('table-wrap').innerHTML = '<div class="loader">Erro: '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Atualizar';
+  }
+}
+
+function render(){
+  const d = DATA;
+  document.getElementById('meta').textContent =
+    'Gerado em ' + new Date(d.generatedAt).toLocaleString('pt-BR') +
+    ' · ' + d.totalConversations + ' conversas · ' + d.agents.length + ' agentes com atividade' +
+    (d.failedPages && d.failedPages.length ? ' · \u26A0 ' + d.failedPages.length + ' pagina(s) nao carregada(s)' : '');
+
+  // cards resumo
+  const tot = d.agents.reduce((s,a)=>({
+    open:s.open+a.open, resolved:s.resolved+a.resolved,
+    pending:s.pending+a.pending, snoozed:s.snoozed+a.snoozed
+  }),{open:0,resolved:0,pending:0,snoozed:0});
+  document.getElementById('cards').innerHTML = [
+    ['Conversas', d.totalConversations],
+    ['Abertas', tot.open],
+    ['Resolvidas', tot.resolved],
+    ['Pendentes', tot.pending],
+    ['Etiquetas', d.labels.length],
+  ].map(([l,n])=>`<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+
+  renderTable();
+}
+
+function renderTable(){
+  const q = document.getElementById('search').value.toLowerCase();
+  let rows = DATA.agents.filter(a => a.name.toLowerCase().includes(q));
+  rows.sort((a,b)=>{
+    const va=a[sortKey], vb=b[sortKey];
+    if(typeof va==='string') return sortDir*va.localeCompare(vb);
+    return sortDir*((va||0)-(vb||0));
+  });
+  const th = (key,label)=>`<th data-k="${key}">${label}${sortKey===key?(sortDir<0?' \u25BC':' \u25B2'):''}</th>`;
+  let html = '<table><thead><tr>' +
+    th('name','Agente') + th('availability','Status') + th('total','Total') +
+    th('open','Abertas') + th('pending','Pend.') + th('resolved','Resolv.') +
+    '<th>Etiquetas</th></tr></thead><tbody>';
+  for(const a of rows){
+    const tags = Object.entries(a.labels).sort((x,y)=>y[1]-x[1])
+      .map(([t,n])=>`<span class="tag" style="background:${colorFor(t)}">${t} (${n})</span>`).join('') || '<span class="muted">—</span>';
+    const st = a.availability==='online' ? '<span class="badge on">online</span>' : '<span class="badge off">'+(a.availability||'-')+'</span>';
+    html += `<tr>
+      <td><strong>${a.name}</strong><br><span class="muted">${a.email||''}</span></td>
+      <td>${st}</td>
+      <td><strong>${a.total}</strong></td>
+      <td>${a.open}</td>
+      <td>${a.pending}</td>
+      <td>${a.resolved}</td>
+      <td>${tags}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('table-wrap').innerHTML = html;
+  document.querySelectorAll('th[data-k]').forEach(el=>{
+    el.onclick = ()=>{
+      const k = el.dataset.k;
+      if(sortKey===k) sortDir*=-1; else { sortKey=k; sortDir=-1; }
+      renderTable();
+    };
+  });
+}
+
+document.getElementById('refresh').onclick = ()=>load(true);
+document.getElementById('search').oninput = ()=>{ if(DATA) renderTable(); };
+load(false);
+</script>
+</body>
+</html>

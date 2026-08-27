@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chatwoot - Dashboard por Supervisor</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --txt:#e2e8f0; --mut:#94a3b8; --accent:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:18px 26px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  h1 { font-size:19px; margin:0; }
+  .meta { color:var(--mut); font-size:13px; }
+  .nav { display:flex; gap:8px; }
+  .nav a { color:var(--mut); text-decoration:none; padding:6px 12px; border-radius:8px; border:1px solid var(--line); font-size:13px; }
+  .nav a.active { background:var(--accent); color:#04263a; font-weight:600; border-color:var(--accent); }
+  select, input { background:var(--card); border:1px solid var(--line); color:var(--txt); padding:8px 12px; border-radius:8px; font-size:14px; }
+  .controls { margin-left:auto; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  label.f { font-size:12px; color:var(--mut); display:flex; flex-direction:column; gap:4px; }
+  main { padding:20px 26px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:22px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .stat .n { font-size:26px; font-weight:700; }
+  .stat .l { color:var(--mut); font-size:13px; margin-top:4px; }
+  h2 { font-size:15px; color:var(--mut); font-weight:600; margin:26px 0 10px; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border-radius:12px; overflow:hidden; font-size:13px; }
+  th, td { padding:9px 11px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { background:#0b1220; color:var(--mut); font-weight:600; position:sticky; top:0; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  tr:hover td { background:#243049; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:12px; color:#04263a; font-weight:600; }
+  .scroll { overflow-x:auto; border-radius:12px; }
+  .tot { font-weight:700; color:#fff; }
+  .bar { height:10px; background:var(--accent); border-radius:4px; }
+  .loader { text-align:center; padding:60px; color:var(--mut); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Dashboard — Conversas Iniciadas por Agente</h1>
+  <nav class="nav">
+    <a href="/supervisor" class="active">Supervisor</a>
+    <a href="/consultor">Consultor</a>
+  </nav>
+  <span class="meta" id="meta"></span>
+  <div class="controls">
+    <label class="f">Supervisor
+      <select id="sup"><option value="">Todos</option></select>
+    </label>
+    <label class="f">De
+      <input type="date" id="de" />
+    </label>
+    <label class="f">Ate
+      <input type="date" id="ate" />
+    </label>
+  </div>
+</header>
+<main id="main"><div class="loader">Carregando dados...</div></main>
+<script>
+let DATA = null;
+
+function colorFor(title){
+  const l = DATA.labels.find(x=>x.title===title);
+  return l && l.color ? l.color : '#64748b';
+}
+
+async function load(){
+  try{
+    const res = await fetch('/dashboard-data.json');
+    DATA = await res.json();
+    if(DATA.error){ document.getElementById('main').innerHTML='<div class="loader">'+DATA.error+'</div>'; return; }
+    initFilters();
+    render();
+  }catch(e){
+    document.getElementById('main').innerHTML='<div class="loader">Erro: '+e.message+'</div>';
+  }
+}
+
+function initFilters(){
+  const sup = document.getElementById('sup');
+  DATA.teams.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; sup.appendChild(o); });
+  const dates = DATA.records.map(r=>r.data).sort();
+  if(dates.length){
+    document.getElementById('de').value = dates[0];
+    document.getElementById('ate').value = dates[dates.length-1];
+  }
+  sup.onchange = render;
+  document.getElementById('de').onchange = render;
+  document.getElementById('ate').onchange = render;
+}
+
+function filtered(){
+  const sup = document.getElementById('sup').value;
+  const de = document.getElementById('de').value;
+  const ate = document.getElementById('ate').value;
+  return DATA.records.filter(r=>{
+    if(sup && !(r.supervisores||[]).includes(sup)) return false;
+    if(de && r.data < de) return false;
+    if(ate && r.data > ate) return false;
+    return true;
+  });
+}
+function render(){
+  const rows = filtered();
+  const dias = [...new Set(rows.map(r=>r.data))].sort();
+  const agentes = [...new Set(rows.map(r=>r.agente))].sort();
+
+  document.getElementById('meta').textContent =
+    'Gerado em ' + new Date(DATA.generatedAt).toLocaleString('pt-BR') +
+    ' · a partir de ' + DATA.cutoffDate + ' · ' + rows.length + ' conversas iniciadas';
+
+  const clientesUnicos = new Set(rows.map(r=>r.telefone || ('c'+r.conversaId))).size;
+  const cardsHtml = [
+    ['Conversas iniciadas', rows.length],
+    ['Clientes unicos', clientesUnicos],
+    ['Agentes ativos', agentes.length],
+    ['Dias no periodo', dias.length],
+  ].map(([l,n])=>`<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+
+  // Tabela 1: iniciadas por agente por dia (matriz)
+  const mat = {};
+  for(const a of agentes){ mat[a] = {}; for(const d of dias) mat[a][d]=0; }
+  for(const r of rows) mat[r.agente][r.data]++;
+  const totalCol = {}; for(const d of dias) totalCol[d]=0;
+  let t1 = '<div class="scroll"><table><thead><tr><th>Agente</th>';
+  for(const d of dias) t1 += `<th class="num">${d.slice(5)}</th>`;
+  t1 += '<th class="num">Total</th></tr></thead><tbody>';
+  const agByTot = agentes.map(a=>({a, t:dias.reduce((s,d)=>s+mat[a][d],0)})).sort((x,y)=>y.t-x.t);
+  for(const {a,t} of agByTot){
+    t1 += `<tr><td>${a}</td>`;
+    for(const d of dias){ const v=mat[a][d]; totalCol[d]+=v; t1 += `<td class="num">${v||''}</td>`; }
+    t1 += `<td class="num tot">${t}</td></tr>`;
+  }
+  t1 += '<tr><td class="tot">TOTAL</td>';
+  let gtot=0; for(const d of dias){ t1 += `<td class="num tot">${totalCol[d]}</td>`; gtot+=totalCol[d]; }
+  t1 += `<td class="num tot">${gtot}</td></tr></tbody></table></div>`;
+
+  // Tabela 2: por etiqueta
+  const byLabel = {};
+  for(const r of rows){
+    if(!r.labels || r.labels.length===0){ byLabel['(sem etiqueta)']=(byLabel['(sem etiqueta)']||0)+1; continue; }
+    for(const t of r.labels) byLabel[t]=(byLabel[t]||0)+1;
+  }
+  const labelRows = Object.entries(byLabel).sort((a,b)=>b[1]-a[1]);
+  const maxLabel = labelRows.length ? labelRows[0][1] : 1;
+  let t2 = '<div class="scroll"><table><thead><tr><th>Etiqueta</th><th class="num">Conversas</th><th style="width:40%">Proporcao</th></tr></thead><tbody>';
+  for(const [t,n] of labelRows){
+    const c = t==='(sem etiqueta)' ? '#64748b' : colorFor(t);
+    const pct = Math.round((n/maxLabel)*100);
+    t2 += `<tr><td><span class="tag" style="background:${c}">${t}</span></td><td class="num tot">${n}</td>`+
+      `<td><div class="bar" style="width:${pct}%;background:${c}"></div></td></tr>`;
+  }
+  t2 += '</tbody></table></div>';
+
+  document.getElementById('main').innerHTML =
+    '<div class="cards">'+cardsHtml+'</div>' +
+    '<h2>Conversas iniciadas por agente por dia</h2>' + t1 +
+    '<h2>Conversas iniciadas por etiqueta</h2>' + t2;
+}
+load();
+</script>
+</body>
+</html>
