@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0f172a;
+  --color-bg-card: #1e293b;
+  --color-bg-header: #0b1220;
+  --color-border: #334155;
+  --color-text: #e2e8f0;
+  --color-muted: #94a3b8;
+  --color-accent: #38bdf8;
+  --color-accent-hover: #7dd3fc;
+  --color-success: #065f46;
+  --color-success-text: #a7f3d0;
+  --color-danger: #991b1b;
+  --color-danger-text: #fecaca;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+/* Force dark text on form inputs */
+input, select, textarea {
+  color-scheme: dark;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* Table styling */
+table {
+  border-collapse: collapse;
+}
+th {
+  user-select: none;
+}
+
+/* Recharts dark theme — force light text on all chart elements */
+.recharts-legend-item-text,
+.recharts-legend-item value,
+.recharts-cartesian-axis-tick-value,
+.recharts-label,
+.recharts-pie-label-text {
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+}
+.recharts-tooltip-item {
+  color: #e2e8f0 !important;
+}
+.recharts-default-tooltip .recharts-tooltip-label {
+  color: #e2e8f0 !important;
+}
+.recharts-default-tooltip .recharts-tooltip-item {
+  color: #e2e8f0 !important;
+}
+.recharts-pie-sector .recharts-label {
+  fill: #e2e8f0 !important;
+}
+
+/* Dark mode for select dropdowns */
+select {
+  color-scheme: dark;
+}

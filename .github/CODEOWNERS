@@ -1,0 +1,14 @@
+# Default: all changes require review
+* @viniciusfigueiredo
+
+# Backend changes
+backend/ @viniciusfigueiredo
+
+# Frontend changes
+frontend/ @viniciusfigueiredo
+
+# CI/CD changes
+.github/ @viniciusfigueiredo
+
+# Config changes (sensitive)
+*.env* @viniciusfigueiredo

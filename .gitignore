@@ -1,4 +1,36 @@
-config.json
+# Dependencies
 node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+chatwoot-server
+chatwoot-server.exe
+*.exe
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Config with secrets
+config.json
+
+# Logs
 *.log
-*.pid
+run-*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# CSV exports (generated)
+*.csv
+
+# Backup files
+*.bak.json

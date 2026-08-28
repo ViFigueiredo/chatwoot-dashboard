@@ -1,0 +1,41 @@
+#!/bin/bash
+# Pre-commit hook: runs tests before allowing commit
+# Install: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# 1. TypeScript check
+echo "  → TypeScript check..."
+cd frontend
+if ! npx tsc -b --noEmit 2>/dev/null; then
+    echo "❌ TypeScript errors found. Fix them before committing."
+    exit 1
+fi
+
+# 2. Frontend tests
+echo "  → Frontend tests..."
+if ! npx vitest run --reporter=verbose 2>/dev/null; then
+    echo "❌ Frontend tests failed. Fix them before committing."
+    exit 1
+fi
+cd ..
+
+# 3. Go build check
+echo "  → Go build check..."
+cd backend
+if ! go build -o /dev/null . 2>/dev/null; then
+    echo "❌ Go build failed. Fix errors before committing."
+    exit 1
+fi
+
+# 4. Go tests
+echo "  → Go tests..."
+if ! go test ./... 2>/dev/null; then
+    echo "❌ Go tests failed. Fix them before committing."
+    exit 1
+fi
+cd ..
+
+echo "✅ All checks passed!"
