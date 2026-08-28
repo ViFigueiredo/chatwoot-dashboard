@@ -35,12 +35,9 @@ services:
       - chatwootbi-api
 
   chatwootbi-frontend:
-    image: node:22-alpine
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
+    image: ghcr.io/vifigueiredo/chatwootbi-frontend:latest
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://localhost:8080
-    command: sh -c "npm install && npm run dev -- --host"
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+    restart: unless-stopped

@@ -1,28 +1,29 @@
 #!/bin/bash
-# build-image.sh: build e push da imagem Docker
+# build-image.sh: build e push das imagens Docker (backend + frontend)
 # Uso: ./scripts/build-image.sh [registry]
-# Exemplos:
-#   ./scripts/build-image.sh                    # ghcr.io (padrão)
-#   ./scripts/build-image.sh docker.io/vinicius  # Docker Hub
 
 set -e
 
 REGISTRY="${1:-ghcr.io/vifigueiredo}"
-IMAGE="$REGISTRY/chatwootbi:latest"
 
-echo "🔨 Buildando imagem Docker..."
+echo "🔨 Buildando imagem backend (API + Worker)..."
 docker build -t chatwootbi:latest -f backend/Dockerfile backend/
+docker tag chatwootbi:latest "$REGISTRY/chatwootbi:latest"
 
-echo "🏷️  Tagging para $IMAGE..."
-docker tag chatwootbi:latest "$IMAGE"
+echo "🔨 Buildando imagem frontend..."
+docker build -t chatwootbi-frontend:latest -f frontend/Dockerfile frontend/
+docker tag chatwootbi-frontend:latest "$REGISTRY/chatwootbi-frontend:latest"
 
 echo "🔐 Login no registry..."
 docker login "$REGISTRY"
 
-echo "🚀 Push..."
-docker push "$IMAGE"
+echo "🚀 Push backend..."
+docker push "$REGISTRY/chatwootbi:latest"
 
-echo "✅ Imagem enviada: $IMAGE"
+echo "🚀 Push frontend..."
+docker push "$REGISTRY/chatwootbi-frontend:latest"
+
 echo ""
-echo "No Portainer, use a imagem:"
-echo "  $IMAGE"
+echo "✅ Imagens enviadas:"
+echo "   $REGISTRY/chatwootbi:latest"
+echo "   $REGISTRY/chatwootbi-frontend:latest"
