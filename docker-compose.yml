@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  api:
+  chatwootbi-api:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -20,7 +20,7 @@ services:
       - REFRESH_RATE_LIMIT_PER_HOUR=${REFRESH_RATE_LIMIT_PER_HOUR:-10}
     restart: unless-stopped
 
-  worker:
+  chatwootbi-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -36,9 +36,9 @@ services:
       - FETCH_CONCURRENCY=${FETCH_CONCURRENCY:-8}
     restart: unless-stopped
     depends_on:
-      - api
+      - chatwootbi-api
 
-  frontend:
+  chatwootbi-frontend:
     image: node:22-alpine
     working_dir: /app
     volumes:
