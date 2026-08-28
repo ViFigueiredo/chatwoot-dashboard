@@ -9,6 +9,7 @@ networks:
 services:
   chatwootbi-api:
     image: ghcr.io/vifigueiredo/chatwootbi:latest
+    hostname: chatwootbi-api
     ports:
       - "8080:8080"
     command: ["/api"]
@@ -29,6 +30,7 @@ services:
 
   chatwootbi-worker:
     image: ghcr.io/vifigueiredo/chatwootbi:latest
+    hostname: chatwootbi-worker
     command: ["/worker"]
     environment:
       - CHATWOOT_BASE_URL=${CHATWOOT_BASE_URL}
@@ -48,6 +50,7 @@ services:
 
   chatwootbi-frontend:
     image: ghcr.io/vifigueiredo/chatwootbi-frontend:latest
+    hostname: chatwootbi-frontend
     ports:
       - "3000:3000"
     environment:
