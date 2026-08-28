@@ -23,17 +23,21 @@ fi
 cd ..
 
 # 3. Go build check
-echo "  → Go build check..."
+echo "  → Go build check (API + Worker)..."
 cd backend
-if ! go build -o /dev/null . 2>/dev/null; then
-    echo "❌ Go build failed. Fix errors before committing."
+if ! go build -o /dev/null ./cmd/api 2>/dev/null; then
+    echo "❌ API build failed."
+    exit 1
+fi
+if ! go build -o /dev/null ./cmd/worker 2>/dev/null; then
+    echo "❌ Worker build failed."
     exit 1
 fi
 
 # 4. Go tests
 echo "  → Go tests..."
 if ! go test ./... 2>/dev/null; then
-    echo "❌ Go tests failed. Fix them before committing."
+    echo "❌ Go tests failed."
     exit 1
 fi
 cd ..
