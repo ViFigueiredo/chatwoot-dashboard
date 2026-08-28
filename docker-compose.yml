@@ -1,19 +1,31 @@
 version: '3.8'
 
 services:
-  backend:
+  api:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: api
     ports:
       - "8080:8080"
     env_file:
       - .env.local
     environment:
       - PORT=8080
-      - CACHE_TTL_SECONDS=86400
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: worker
+    env_file:
+      - .env.local
+    environment:
       - CACHE_REFRESH_INTERVAL_MINUTES=30
-      - FETCH_CONCURRENCY=8
+    restart: unless-stopped
+    depends_on:
+      - api
 
   frontend:
     image: node:22-alpine

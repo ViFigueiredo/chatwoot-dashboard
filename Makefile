@@ -1,86 +1,46 @@
-.PHONY: dev test build deploy clean install-hooks
+.PHONY: help dev dev-api dev-worker build test docker-up docker-down
 
-# === Development ===
+help: ## Mostra todos os comandos
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-dev: ## Start both backend and frontend in development mode
-	@echo "Starting backend..."
-	cd backend && go run . &
-	@echo "Starting frontend..."
-	cd frontend && npm run dev
-	@echo "Dashboard: http://localhost:3000"
+# --- Desenvolvimento Local ---
+
+dev: ## Roda API + Worker localmente (2 terminais)
+	@echo "Iniciando API e Worker..."
+	@cd backend && go run ./cmd/api &
+	@cd backend && go run ./cmd/worker &
 	@echo "API: http://localhost:8080"
+	@echo "Worker: rodando em background"
 
-dev-backend: ## Start only backend
-	cd backend && go run .
+dev-api: ## Roda somente a API
+	cd backend && go run ./cmd/api
 
-dev-frontend: ## Start only frontend
-	cd frontend && npm run dev
+dev-worker: ## Roda somente o Worker
+	cd backend && go run ./cmd/worker
 
-# === Testing ===
+# --- Build & Test ---
 
-test: test-backend test-frontend ## Run all tests
+build: ## Build dos binários API e Worker
+	cd backend && go build -o bin/api ./cmd/api
+	cd backend && go build -o bin/worker ./cmd/worker
 
-test-backend: ## Run Go tests
-	cd backend && go test ./... -v
+test: ## Roda todos os testes
+	cd backend && go test ./...
+	cd frontend && npx vitest run
 
-test-frontend: ## Run frontend tests
-	cd frontend && npm test
+# --- Docker ---
 
-test-watch: ## Run frontend tests in watch mode
-	cd frontend && npm run test:watch
+docker-up: ## Sobe API + Worker + Frontend via Docker
+	docker-compose up -d --build
 
-# === Build ===
-
-build: build-backend build-frontend ## Build everything
-
-build-backend: ## Build Go binary
-	cd backend && CGO_ENABLED=0 go build -o ../chatwoot-server .
-
-build-frontend: ## Build frontend for production
-	cd frontend && npm run build
-
-# === Quality ===
-
-lint: ## Run linters
-	cd frontend && npx eslint . --max-warnings=0
-
-typecheck: ## Run TypeScript check
-	cd frontend && npx tsc -b
-
-fmt: ## Format Go code
-	cd backend && gofmt -w .
-
-# === Install ===
-
-install: install-frontend ## Install all dependencies
-
-install-frontend: ## Install frontend dependencies
-	cd frontend && npm install
-
-install-hooks: ## Install git hooks
-	cp scripts/pre-commit .git/hooks/pre-commit
-	chmod +x .git/hooks/pre-commit
-	@echo "✅ Pre-commit hook installed"
-
-# === Docker ===
-
-docker-up: ## Start with Docker Compose
-	docker-compose up -d
-
-docker-down: ## Stop Docker Compose
+docker-down: ## Para todos os containers
 	docker-compose down
 
-docker-build: ## Build Docker images
-	docker-compose build
+docker-logs: ## Mostra logs dos containers
+	docker-compose logs -f
 
-# === Clean ===
+# --- Deploy ---
 
-clean: ## Clean build artifacts
-	rm -rf frontend/dist backend/chatwoot-server chatwoot-server
-	cd frontend && rm -rf node_modules
-	cd backend && go clean -cache
-
-# === Help ===
-
-help: ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+install-hooks: ## Instala pre-commit hook
+	cp scripts/pre-commit .git/hooks/pre-commit
+	chmod +x .git/hooks/pre-commit

@@ -1,13 +1,29 @@
-FROM golang:1.22-alpine AS builder
+# Build stage
+FROM golang:1.23-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o server .
 
-FROM alpine:3.19
+# API binary
+FROM builder AS api-build
+RUN CGO_ENABLED=0 go build -o /api ./cmd/api
+
+# Worker binary
+FROM builder AS worker-build
+RUN CGO_ENABLED=0 go build -o /worker ./cmd/worker
+
+# API runtime
+FROM alpine:3.19 AS api
 RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/server .
+WORKDIR /app
+COPY --from=api-build /api .
 EXPOSE 8080
-CMD ["./server"]
+CMD ["./api"]
+
+# Worker runtime
+FROM alpine:3.19 AS worker
+RUN apk --no-cache add ca-certificates
+WORKDIR /app
+COPY --from=worker-build /worker .
+CMD ["./worker"]
