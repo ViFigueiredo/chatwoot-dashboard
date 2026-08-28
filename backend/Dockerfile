@@ -4,26 +4,16 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-
-# API binary
-FROM builder AS api-build
 RUN CGO_ENABLED=0 go build -o /api ./cmd/api
-
-# Worker binary
-FROM builder AS worker-build
 RUN CGO_ENABLED=0 go build -o /worker ./cmd/worker
 
-# API runtime
-FROM alpine:3.19 AS api
+# Runtime
+FROM alpine:3.19
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
-COPY --from=api-build /api .
-EXPOSE 8080
-CMD ["./api"]
+COPY --from=builder /api /api
+COPY --from=builder /worker /worker
 
-# Worker runtime
-FROM alpine:3.19 AS worker
-RUN apk --no-cache add ca-certificates
-WORKDIR /app
-COPY --from=worker-build /worker .
-CMD ["./worker"]
+EXPOSE 8080
+# Default: API. Worker uses command override.
+CMD ["/api"]

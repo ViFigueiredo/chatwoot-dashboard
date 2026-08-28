@@ -2,12 +2,10 @@ version: '3.8'
 
 services:
   chatwootbi-api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: api
+    image: chatwootbi:latest
     ports:
       - "8080:8080"
+    command: ["/api"]
     environment:
       - PORT=8080
       - CHATWOOT_BASE_URL=${CHATWOOT_BASE_URL}
@@ -21,10 +19,8 @@ services:
     restart: unless-stopped
 
   chatwootbi-worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: worker
+    image: chatwootbi:latest
+    command: ["/worker"]
     environment:
       - CHATWOOT_BASE_URL=${CHATWOOT_BASE_URL}
       - CHATWOOT_ACCOUNT_ID=${CHATWOOT_ACCOUNT_ID}
