@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   chatwootbi-api:
-    image: chatwootbi:latest
+    image: ghcr.io/vifigueiredo/chatwootbi:latest
     ports:
       - "8080:8080"
     command: ["/api"]
@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   chatwootbi-worker:
-    image: chatwootbi:latest
+    image: ghcr.io/vifigueiredo/chatwootbi:latest
     command: ["/worker"]
     environment:
       - CHATWOOT_BASE_URL=${CHATWOOT_BASE_URL}
