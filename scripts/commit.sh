@@ -1,16 +1,18 @@
 #!/bin/bash
-# Pre-commit hook: roda testes e aborta commit se falhar
-# Install: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# commit.sh: testa → commita → pusha
+# Uso: ./scripts/commit.sh "mensagem do commit"
 
 set -e
 
-echo "🔍 Verificando testes..."
+MSG="${1:-chore: atualização automática}"
+
+echo "🔍 Rodando testes..."
 
 # 1. TypeScript
 echo "  → TypeScript..."
 cd frontend
 if ! npx tsc -b --noEmit 2>/dev/null; then
-    echo "❌ TypeScript com erros."
+    echo "❌ TypeScript com erros. Corrija antes de commitar."
     exit 1
 fi
 
@@ -23,7 +25,7 @@ fi
 cd ..
 
 # 3. Go build
-echo "  → Go build..."
+echo "  → Go build (API + Worker)..."
 cd backend
 if ! go build -o /dev/null ./cmd/api 2>/dev/null; then
     echo "❌ Build da API falhou."
@@ -43,3 +45,15 @@ fi
 cd ..
 
 echo "✅ Todos os testes passaram!"
+
+echo "📦 Commitando..."
+git add -A
+git commit -m "$MSG
+
+🤖 Generated with Codebuff
+Co-Authored-By: Codebuff <noreply@codebuff.com>"
+
+echo "🚀 Enviando..."
+git push
+
+echo "✅ Commit e push concluídos!"
