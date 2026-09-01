@@ -67,6 +67,12 @@ func main() {
 	mux.HandleFunc("/api/dashboard-data", wrap(handlers.HandleDashboardDataDynamic(cfg, client)))
 	mux.HandleFunc("/api/prospection", wrap(handlers.HandleProspection(cfg, client)))
 
+	// Validação de token para a tela de login (autenticado e sem custo de cache/Chatwoot)
+	mux.HandleFunc("/api/auth-check", wrap(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Write([]byte(`{"status":"ok"}`))
+	}))
+
 	// Health check
 	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { setToken } from '@/lib/api'
+import { setToken, clearToken } from '@/lib/api'
 
 interface Props {
   onAuthenticated: () => void
@@ -20,22 +20,22 @@ export default function AuthGuard({ onAuthenticated }: Props) {
     setLoading(true)
     setError('')
 
-    // Store token and try a request
-    setToken(token.trim())
-
+    // Valida o token contra um endpoint autenticado antes de liberar a UI.
+    // /api/health é público: usá-lo aceitaria qualquer string como token.
     try {
-      const res = await fetch('/api/health', {
+      const res = await fetch('/api/auth-check', {
         headers: { Authorization: `Bearer ${token.trim()}` },
       })
       if (res.ok) {
+        setToken(token.trim())
         onAuthenticated()
       } else {
+        clearToken()
         setError('Token inválido')
-        setToken('')
       }
     } catch {
-      // If health check fails, still allow (might be CORS or network issue)
-      onAuthenticated()
+      clearToken()
+      setError('Não foi possível validar o token. Verifique sua conexão e tente novamente.')
     } finally {
       setLoading(false)
     }

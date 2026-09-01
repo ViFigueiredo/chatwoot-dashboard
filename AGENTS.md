@@ -83,6 +83,7 @@ O **Chatwoot BI Dashboard** é uma ferramenta de inteligência operacional que c
 | Endpoint | Método | Descrição |
 |---|---|---|
 | `/api/health` | GET | Health check (sem auth) |
+| `/api/auth-check` | GET | Valida o `DASHBOARD_TOKEN` (usado pela tela de login) |
 | `/api/report` | GET | Relatório consolidado |
 | `/api/report-refresh` | GET | Força refresh do cache |
 | `/api/export-agents` | GET | CSV de agentes |

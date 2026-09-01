@@ -21,6 +21,18 @@ Health check. Não requer autenticação.
 }
 ```
 
+### GET /api/auth-check
+Valida o `DASHBOARD_TOKEN` enviado no header `Authorization`. Usado pela tela de
+login do frontend, que não pode validar contra `/api/health` (público, aceitaria
+qualquer token). Retorna `401` quando o token está ausente ou é inválido.
+
+**Response:**
+```json
+{
+  "status": "ok"
+}
+```
+
 ### GET /api/report
 Retorna o relatório consolidado de agentes com etiquetas.
 
